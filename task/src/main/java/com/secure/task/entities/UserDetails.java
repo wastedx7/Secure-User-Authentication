@@ -1,65 +1,85 @@
 package com.secure.task.entities;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
+import java.sql.Timestamp;
 
-import org.springframework.security.core.GrantedAuthority;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 
 @Entity
 @Table(name = "userdetails")
-@Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserDetails {
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private String userId;
     @Column(nullable = false)
     private String name;
     @Column(unique = true, nullable = false)
     private String email;
     @Column(nullable = false)
     private String password;
-    private String role;
-    private boolean enabled;
-    @Column(name = "verification_code")
-    private String verificationCode;
-    @Column(name = "verification_expiration")
-    private LocalDateTime verificationCodeExpiresAt;
-    
-    public UserDetails(){}
+    private String verifyOtp;
+    private boolean isAccountVerified;
+    private Long verifyOtpExpireAt;
+    private String resetOtp;    
+    private Long resetOtpExpireAt;
 
-    public UserDetails(Long id, String name, String email, String password, String role){
-        this.id = id;
-        this.name = name;
-        this.email = email; 
-        this.password = password;
-        this.role = role;
-    }
+    @CreationTimestamp
+    @Column(updatable=false)
+    private Timestamp createdAt;
+    @UpdateTimestamp
+    private Timestamp updatedAt;
 
-    public Collection<? extends GrantedAuthority> getAuthorities(){
-        return List.of();
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public boolean isAccountExpired(){
-        return false;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public boolean isAccountLocked(){
-        return false;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public boolean isCredentialsExpired(){
-        return false;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public boolean isEnabled(){
-        return enabled;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public String getVerifyOtp() { return verifyOtp; }
+    public void setVerifyOtp(String verifyOtp) { this.verifyOtp = verifyOtp; }
+
+    public boolean isAccountVerified() { return isAccountVerified; }
+    public void setAccountVerified(boolean isAccountVerified) { this.isAccountVerified = isAccountVerified; }
+
+    public Long getVerifyOtpExpireAt() { return verifyOtpExpireAt; }
+    public void setVerifyOtpExpireAt(Long verifyOtpExpireAt) { this.verifyOtpExpireAt = verifyOtpExpireAt; }
+
+    public String getResetOtp() { return resetOtp; }
+    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
+
+    public Long getResetOtpExpireAt() { return resetOtpExpireAt; }
+    public void setResetOtpExpireAt(Long resetOtpExpireAt) { this.resetOtpExpireAt = resetOtpExpireAt; }
+
+    public Timestamp getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public Timestamp getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
 
 }

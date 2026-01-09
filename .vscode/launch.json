@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-TaskApplication<task>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.secure.task.TaskApplication",
+            "projectName": "task",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
