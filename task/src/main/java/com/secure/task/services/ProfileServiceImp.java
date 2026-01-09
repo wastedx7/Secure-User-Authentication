@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.secure.task.entities.UserDetails;
+import com.secure.task.entities.UserEntity;
 import com.secure.task.io.ProfileRequest;
 import com.secure.task.io.ProfileResponse;
 import com.secure.task.repositories.UserRepository;
@@ -21,7 +21,7 @@ public class ProfileServiceImp implements ProfileService {
 
     @Override
     public ProfileResponse createProfile(ProfileRequest request){
-        UserDetails newProfile = convertToUserEntity(request);
+        UserEntity newProfile = convertToUserEntity(request);
         if(!userRepository.existsByEmail(request.getEmail())){
             newProfile = userRepository.save(newProfile);
             return convertToProfileResponse(newProfile);
@@ -29,7 +29,7 @@ public class ProfileServiceImp implements ProfileService {
         throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
     }
 
-    private ProfileResponse convertToProfileResponse(UserDetails newProfile) {
+    private ProfileResponse convertToProfileResponse(UserEntity newProfile) {
         return ProfileResponse.builder()
                 .name(newProfile.getName())
                 .email(newProfile.getEmail())
@@ -38,8 +38,8 @@ public class ProfileServiceImp implements ProfileService {
                 .build();
     }
 
-    private UserDetails convertToUserEntity(ProfileRequest request) {
-        return UserDetails.builder()
+    private UserEntity convertToUserEntity(ProfileRequest request) {
+        return UserEntity.builder()
                 .email(request.getEmail())
                 .userId(UUID.randomUUID().toString())
                 .name(request.getName())

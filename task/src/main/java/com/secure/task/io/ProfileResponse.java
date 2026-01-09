@@ -1,8 +1,6 @@
 package com.secure.task.io;
 
 import lombok.Builder;
-import lombok.Data;
-
 
 @Builder
 public class ProfileResponse {
