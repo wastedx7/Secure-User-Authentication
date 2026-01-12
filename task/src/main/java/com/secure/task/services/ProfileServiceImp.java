@@ -3,6 +3,7 @@ package com.secure.task.services;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -17,6 +18,11 @@ public class ProfileServiceImp implements ProfileService {
     private final UserRepository userRepository;
     public ProfileServiceImp(UserRepository userRepository){
         this.userRepository = userRepository;
+    }
+
+    private final BCryptPasswordEncoder passwordEncoder;
+    public ProfileServiceImp(BCryptPasswordEncoder passwordEncoder){
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -43,7 +49,7 @@ public class ProfileServiceImp implements ProfileService {
                 .email(request.getEmail())
                 .userId(UUID.randomUUID().toString())
                 .name(request.getName())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .isAccountVerified(false)
                 .resetOtpExpireAt(0L)
                 .verifyOtp(null)

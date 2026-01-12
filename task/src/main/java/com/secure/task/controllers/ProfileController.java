@@ -15,7 +15,6 @@ import com.secure.task.io.ProfileResponse;
 
 
 @RestController
-@RequestMapping("/api")
 public class ProfileController {
     
     private final ProfileService profileService;

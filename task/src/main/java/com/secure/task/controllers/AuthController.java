@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.secure.task.io.AuthRequest;
+import com.secure.task.io.AuthResponse;
 import com.secure.task.services.AppUserDetailsService;
 import com.secure.task.util.JwtUtil;
 
@@ -45,6 +47,8 @@ public class AuthController {
                 .maxAge(Duration.ofDays(1))
                 .sameSite("Strict")
                 .build();
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(new AuthResponse(authRequest.getEmail(), jwtToken));
         } 
         catch(BadCredentialsException ex) { // if email, password wrong, use this
             Map<String, Object> error = new HashMap<>();                        
