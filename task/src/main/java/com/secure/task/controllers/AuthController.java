@@ -70,7 +70,6 @@ public class AuthController {
             error.put("message", "authorization failed");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
-        return ResponseEntity.ok("login done");
     }
 
     private void authenticate(String email, String password) {
