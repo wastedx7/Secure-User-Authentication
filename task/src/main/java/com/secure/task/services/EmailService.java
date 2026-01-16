@@ -22,5 +22,15 @@ public class EmailService {
         message.setTo(toEmail);
         message.setSubject("Welcome gng!");
         message.setText("Thanks for registering "+name+ " regards -Evangelion");
+        mailSender.send(message);
+    }
+
+    public void sendResetOTPEmail(String toEmail, String otp){
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Reset OTP");
+        message.setText("use this OTP to reset your password");
+        mailSender.send(message);
     }
 }

@@ -1,8 +1,8 @@
 package com.secure.task.services;
 
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,16 +14,15 @@ import com.secure.task.io.ProfileRequest;
 import com.secure.task.io.ProfileResponse;
 import com.secure.task.repositories.UserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class ProfileServiceImp implements ProfileService {
     
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    
-    public ProfileServiceImp(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder){
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final EmailService emailService;
 
     @Override
     public ProfileResponse createProfile(ProfileRequest request){
@@ -40,6 +39,31 @@ public class ProfileServiceImp implements ProfileService {
         UserEntity existingUser = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("user not found for email : " + email));
         return convertToProfileResponse(existingUser);
+    }
+
+    @Override
+    public void sendResetOTP(String email){
+        UserEntity existingEntity = userRepository.findByEmail(email)       //load the user
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // generate a four digit otp
+        String otp = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
+
+        long expiryTime = System.currentTimeMillis() + (15 * 60 * 1000);
+
+        //update the profile of the user
+        existingEntity.setResetOtp(otp);
+        existingEntity.setResetOtpExpireAt(expiryTime);
+
+        // save everything
+        userRepository.save(existingEntity);
+
+        try {
+            // send reset otp
+            emailService.sendResetOTPEmail(existingEntity.getEmail(), otp);
+        } catch(Exception ex) {
+            throw new RuntimeException("unable to send reset otp");
+        }
     }
 
     private ProfileResponse convertToProfileResponse(UserEntity newProfile) {
