@@ -12,11 +12,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import com.secure.task.filter.JwtFilter;
 import com.secure.task.services.AppUserDetailsService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,17 +29,21 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
     
     private final AppUserDetailsService appUserDetailsService;
+    private final JwtFilter jwtFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/register")
+                .requestMatchers("/login", "/register", "/send-reset-otp", "reset-password", "logout")
                 .permitAll().anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .logout(logout -> logout.disable());
-            return http.build();
+            .logout(logout -> logout.disable())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint));
+        return http.build();
     }
 
     @Bean 

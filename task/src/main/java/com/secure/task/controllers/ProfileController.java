@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.secure.task.io.ProfileRequest;
 import com.secure.task.io.ProfileResponse;
 
+import org.springframework.security.core.annotation.CurrentSecurityContext;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+
 
 @RestController
 public class ProfileController {
@@ -26,8 +31,13 @@ public class ProfileController {
     @PostMapping("/register")
     public ProfileResponse register(@Valid @RequestBody ProfileRequest request) {
         ProfileResponse response = profileService.createProfile(request);
-        // TODO : send email
+
         return response;
+    }
+
+    @GetMapping("/profile")
+    public ProfileResponse getProfile(@CurrentSecurityContext(expression = "authentication?.name") String email){
+        return profileService.getProfile(email);
     }
     
 }
