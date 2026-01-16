@@ -2,6 +2,7 @@ package com.secure.task.services;
 
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,12 +17,10 @@ import com.secure.task.repositories.UserRepository;
 public class ProfileServiceImp implements ProfileService {
     
     private final UserRepository userRepository;
-    public ProfileServiceImp(UserRepository userRepository){
-        this.userRepository = userRepository;
-    }
-
     private final BCryptPasswordEncoder passwordEncoder;
-    public ProfileServiceImp(BCryptPasswordEncoder passwordEncoder){
+    
+    public ProfileServiceImp(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder){
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 

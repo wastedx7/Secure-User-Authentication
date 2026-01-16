@@ -1,14 +1,19 @@
 package com.secure.task.util;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
+@Component
 public class JwtUtil {
     
     @Value("${jwt.secret-key}")
@@ -17,18 +22,47 @@ public class JwtUtil {
     // this takes userDetails simply for its email 
     public String generateToken(UserDetails userDetails){
         // claims is the three parts of jwt token 
-        Map<String, Object> claims = new HashMap();
+        Map<String, Object> claims = new HashMap<>();
         // create token will return a token for the username as in the claims format
         return createToken(claims, userDetails.getUsername());
     }
 
     private String createToken(Map<String, Object> claims, String username){
-        Jwts.builder()              
-            .setClaims(claims)          // set claims
-            .setSubject(username)       // for username
-            .setIssuedAt(new Date(System.currentTimeMillis()))      // issue date = now
-            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))  // 24 hours 
-            .signWith(SignatureAlgorithm.HS256, SECRET_KEY)     // idk about this, some algorithm used for the token
-            .compact();         // this will concatinate all three parts of the final token
+        return Jwts.builder()              
+                .setClaims(claims)          // set claims
+                .setSubject(username)       // for username
+                .setIssuedAt(new Date(System.currentTimeMillis()))      // issue date = now
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))  // 24 hours 
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)     // idk about this, some algorithm used for the token
+                .compact();         // this will concatinate all three parts of the final token
+    }
+
+    private Claims extractAllClaims(String token){
+        return Jwts.parser()
+            .setSigningKey(SECRET_KEY)
+            .parseClaimsJws(token)
+            .getBody();
+    }
+
+    public <T> T extractClaims(String token, Function<Claims, T> claimsResolver){
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    public String extractEmail(String token){
+        return extractClaims(token, Claims::getSubject);
+    }
+
+    public Date extractExpiration(String token){
+        return extractClaims(token, Claims::getExpiration);
+    }
+
+    private boolean isTokenExpired(String token){
+        return extractExpiration(token).before(new Date());
+    }
+
+    public boolean validateToken(String token, UserDetails userDetails){
+        final String email = extractEmail(token);
+        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 }
