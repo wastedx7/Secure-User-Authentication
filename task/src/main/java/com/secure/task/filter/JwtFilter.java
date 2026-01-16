@@ -27,7 +27,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final AppUserDetailsService appUserDetailsService;
     private final JwtUtil jwtUtil;
 
-    private static final List<String> PUBLIC_URLS = List.of("/register", "/login", "/send-reset-otp", "reset-password", "logout");
+    private static final List<String> PUBLIC_URLS = List.of("/register", "/login", "/send-reset-otp", "/reset-password", "/logout");
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, java.io.IOException{
@@ -53,7 +53,7 @@ public class JwtFilter extends OncePerRequestFilter {
             Cookie[] cookies = request.getCookies();
             if(cookies != null){
                 for (Cookie cookie : cookies) {
-                    if(jwt.equals(cookie.getName())){
+                    if("jwt".equals(cookie.getName())){
                         jwt = cookie.getValue();
                         break;
                     }
