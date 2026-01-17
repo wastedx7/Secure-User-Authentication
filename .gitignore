@@ -33,3 +33,25 @@ build/
 *.vscode
 
 .env
+
+# Node dependencies
+/frontend/node_modules
+
+# Vite cache & build
+/frontend/dist
+/frontend/.vite
+
+# Logs
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+
+# Environment variables (sensitive)
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.*.local
+
+# OS / Editor
+/frontend/.DS_Store
+/frontend/.vscode
+/frontend/.idea
