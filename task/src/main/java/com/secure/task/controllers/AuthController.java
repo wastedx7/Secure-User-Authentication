@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,10 +24,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.secure.task.io.AuthRequest;
 import com.secure.task.io.AuthResponse;
+import com.secure.task.io.ResetPasswordRequest;
 import com.secure.task.services.AppUserDetailsService;
 import com.secure.task.services.ProfileService;
 import com.secure.task.util.JwtUtil;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 
@@ -95,5 +98,37 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
         }
     }
-}
 
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request){
+        try{
+            profileService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        } catch(Exception ex){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+        }
+    }
+
+    @PostMapping("/send-otp")
+    public void sendVerifyOtp(@CurrentSecurityContext(expression = "authentication?.name") String email){
+        try{
+            profileService.sendOtp(email);
+        } catch(Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public void verifyOtp(@RequestBody Map<String, Object> request, 
+                            @CurrentSecurityContext(expression = "authenticated?.name") String email )
+    {
+        if(request.get("otp").toString() == null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        try {
+            profileService.VerifyOtp(email, request.get("otp").toString());
+        } catch(Exception ex){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+        }
+    }
+}

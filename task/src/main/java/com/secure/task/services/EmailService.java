@@ -30,7 +30,16 @@ public class EmailService {
         message.setFrom(fromEmail);
         message.setTo(toEmail);
         message.setSubject("Reset OTP");
-        message.setText("use this OTP to reset your password");
+        message.setText("use this OTP to reset your password " + otp);
+        mailSender.send(message);
+    }
+
+    public void sendOtpEmail(String toEmail, String otp){
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("Verification OTP");
+        message.setText("use this OTP to verify your account " + otp);
         mailSender.send(message);
     }
 }
