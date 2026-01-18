@@ -56,5 +56,3 @@ build/
 /frontend/.vscode
 /frontend/.idea
 
-# .png 
-*.png
