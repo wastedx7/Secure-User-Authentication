@@ -89,15 +89,15 @@ The system incorporates the following security measures:
 
 ## Screenshots
 
-![App Screenshot](Screenshot (9).png)
+![App Screenshot](./Screenshot (9).png)
 
 ---
 
-![App Screenshot](Screenshot (8).png)
+![App Screenshot](./Screenshot (8).png)
 
 ---
 
-![App Screenshot](Screenshot (7).png)
+![App Screenshot](./Screenshot (7).png)
 
 ---
 
