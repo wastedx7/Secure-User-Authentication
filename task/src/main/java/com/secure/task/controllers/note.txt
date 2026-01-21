@@ -1,0 +1,58 @@
+backend - springboot, db - mysql
+
+Authentication:
+- JWT based
+- Token stored in cookies
+- Authorization header: Bearer <token>
+- /login, /register, /send-reset-otp, /reset-password, /logout is public, all others require auth
+
+here are the backend routes: 
+context path = /api
+
+@PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest)
+RequestBody : String email, String password
+ResponseBody : String email, String token
+
+@GetMapping("/is-authenticated")
+    public ResponseEntity<Boolean> isAuthenticated(@CurrentSecurityContext(expression = "authentication?.name") String email){
+        return ResponseEntity.ok(email != null);
+    }
+
+@PostMapping("/send-reset-otp")
+    public void sendResetOTP(@RequestParam String email)
+
+@PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request)
+RequestBody : String email, String newPassword, String otp
+
+@PostMapping("/send-otp")
+    public void sendVerifyOtp(@CurrentSecurityContext(expression = "authentication?.name") String email)
+
+@PostMapping("/verify-otp")
+    public void verifyOtp(@RequestBody Map<String, Object> request, 
+                            @CurrentSecurityContext(expression = "authentication?.name") String email)
+
+ @PostMapping("/register")
+    public ProfileResponse register(@Valid @RequestBody ProfileRequest request)
+RequestBody : String name, String email, String password
+ResponseBody : String userId, String name, String email, boolean isAccountVerified;
+
+@GetMapping("/profile")
+    public ProfileResponse getProfile(@CurrentSecurityContext(expression = "authentication?.name") String email){
+        return profileService.getProfile(email);
+    }
+ResponseBody : String userId, String name, String email, boolean isAccountVerified;
+
+Pages required:
+- Login
+- register
+- Dashboard
+- reset password
+- verify otp
+
+UI:
+- React 18 + TypeScript + Vite
+- Material UI
+- Responsive layout
+- Protected routes 

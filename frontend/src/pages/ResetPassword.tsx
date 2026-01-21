@@ -1,278 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  TextField,
-  Button,
-  Box,
-  Typography,
-  Alert,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
-} from '@mui/material';
-import { Visibility, VisibilityOff, ArrowBack } from '@mui/icons-material';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { AuthLayout } from '@/components/AuthLayout';
+import { authApi } from '@/lib/api';
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, KeyRound } from 'lucide-react';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
-import AuthLayout from '@/components/AuthLayout';
 
 const emailSchema = z.object({
-  email: z.string().trim().email('Please enter a valid email address'),
+  email: z.string().email('Please enter a valid email address'),
 });
 
 const resetSchema = z.object({
-  otp: z.string().length(4, 'OTP must be 4 digits').regex(/^\d+$/, 'OTP must contain only numbers'),
-  newPassword: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
 });
 
-const steps = ['Enter Email', 'Verify OTP', 'New Password'];
-
-const ResetPassword: React.FC = () => {
-  const navigate = useNavigate();
-  const { sendResetOtp, resetPassword } = useAuth();
-  const [activeStep, setActiveStep] = useState(0);
+export default function ResetPassword() {
+  const [step, setStep] = useState<'email' | 'reset'>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
+  
+  const navigate = useNavigate();
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    const result = emailSchema.safeParse({ email });
-    if (!result.success) {
-      setError(result.error.errors[0].message);
+    setSuccess('');
+    
+    const validation = emailSchema.safeParse({ email });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
-
+    
     setIsLoading(true);
     try {
-      await sendResetOtp(email.trim());
-      setSuccess('Reset code sent to your email!');
-      setActiveStep(1);
-      setCountdown(60);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send reset code. Please try again.');
+      await authApi.sendResetOtp(email);
+      setSuccess('OTP sent to your email');
+      setStep('reset');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send OTP. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVerifyAndReset = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (activeStep === 1) {
-      const result = resetSchema.shape.otp.safeParse(otp);
-      if (!result.success) {
-        setError(result.error.errors[0].message);
-        return;
-      }
-      setActiveStep(2);
+    setSuccess('');
+    
+    const validation = resetSchema.safeParse({ otp, newPassword, confirmPassword });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
-
-    const result = resetSchema.safeParse({ otp, newPassword });
-    if (!result.success) {
-      setError(result.error.errors[0].message);
-      return;
-    }
-
+    
     setIsLoading(true);
     try {
-      await resetPassword(email.trim(), otp, newPassword);
+      await authApi.resetPassword({ email, newPassword, otp });
       setSuccess('Password reset successfully!');
       setTimeout(() => navigate('/login'), 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password. Please try again.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset password. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError('');
-    setIsLoading(true);
-    try {
-      await sendResetOtp(email.trim());
-      setSuccess('Reset code resent to your email!');
-      setCountdown(60);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to resend code. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getTitle = () => {
-    switch (activeStep) {
-      case 0:
-        return 'Reset password';
-      case 1:
-        return 'Enter verification code';
-      case 2:
-        return 'Create new password';
-      default:
-        return 'Reset password';
-    }
-  };
-
-  const getSubtitle = () => {
-    switch (activeStep) {
-      case 0:
-        return "Enter your email and we'll send you a reset code";
-      case 1:
-        return `We sent a code to ${email}`;
-      case 2:
-        return 'Choose a strong password for your account';
-      default:
-        return '';
     }
   };
 
   return (
-    <AuthLayout title={getTitle()} subtitle={getSubtitle()}>
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
-
-      <form onSubmit={activeStep === 0 ? handleSendOtp : handleVerifyAndReset}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {success}
-          </Alert>
-        )}
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {activeStep === 0 && (
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoFocus
-            />
-          )}
-
-          {activeStep === 1 && (
-            <>
-              <TextField
-                fullWidth
-                label="Verification Code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="Enter 4-digit code"
-                inputProps={{ maxLength: 4, style: { letterSpacing: '0.5em', textAlign: 'center' } }}
-                autoFocus
+    <AuthLayout 
+      title={step === 'email' ? 'Reset password' : 'Create new password'} 
+      subtitle={step === 'email' 
+        ? "Enter your email and we'll send you a reset code" 
+        : 'Enter the code and your new password'
+      }
+    >
+      {step === 'email' ? (
+        <form onSubmit={handleSendOtp} className="space-y-5">
+          <div>
+            <label htmlFor="email" className="auth-label">Email</label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="auth-input pl-12"
+                placeholder="name@example.com"
+                disabled={isLoading}
               />
-              <Button
-                variant="text"
-                onClick={handleResendOtp}
-                disabled={isLoading || countdown > 0}
-                sx={{ alignSelf: 'center' }}
-              >
-                {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-              </Button>
-            </>
+            </div>
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+            >
+              <p className="text-sm text-destructive">{error}</p>
+            </motion.div>
           )}
 
-          {activeStep === 2 && (
-            <TextField
-              fullWidth
-              label="New Password"
-              type={showPassword ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter your new password"
-              helperText="At least 8 characters with letters and numbers"
-              autoComplete="new-password"
-              autoFocus
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          )}
-
-          <Button
+          <button
             type="submit"
-            variant="contained"
-            fullWidth
-            size="large"
             disabled={isLoading}
-            sx={{ mt: 1, py: 1.5 }}
+            className="btn-primary w-full flex items-center justify-center gap-2"
           >
-            {isLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : activeStep === 0 ? (
-              'Send Reset Code'
-            ) : activeStep === 1 ? (
-              'Verify Code'
-            ) : (
-              'Reset Password'
-            )}
-          </Button>
-        </Box>
-      </form>
+            {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+            {isLoading ? 'Sending...' : 'Send reset code'}
+          </button>
 
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography
-          component={Link}
-          to="/login"
-          className="link-primary"
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.5,
-            fontSize: '0.875rem',
-            textDecoration: 'none',
-          }}
-        >
-          <ArrowBack sx={{ fontSize: 16 }} />
-          Back to sign in
-        </Typography>
-      </Box>
+          <Link to="/login" className="btn-ghost w-full flex items-center justify-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to login
+          </Link>
+        </form>
+      ) : (
+        <form onSubmit={handleResetPassword} className="space-y-5">
+          <div>
+            <label htmlFor="otp" className="auth-label">Verification Code</label>
+            <div className="relative">
+              <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input
+                id="otp"
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="auth-input pl-12 tracking-widest font-mono"
+                placeholder="000000"
+                maxLength={6}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="newPassword" className="auth-label">New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input
+                id="newPassword"
+                type={showPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="auth-input pl-12 pr-12"
+                placeholder="Enter new password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="auth-label">Confirm New Password</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input
+                id="confirmPassword"
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="auth-input pl-12"
+                placeholder="Confirm new password"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+            >
+              <p className="text-sm text-destructive">{error}</p>
+            </motion.div>
+          )}
+
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-lg bg-success/10 border border-success/20"
+            >
+              <p className="text-sm text-success">{success}</p>
+            </motion.div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary w-full flex items-center justify-center gap-2"
+          >
+            {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+            {isLoading ? 'Resetting...' : 'Reset password'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStep('email')}
+            className="btn-ghost w-full flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </form>
+      )}
     </AuthLayout>
   );
-};
-
-export default ResetPassword;
+}

@@ -1,169 +1,155 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  TextField,
-  Button,
-  Box,
-  Typography,
-  Alert,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
-} from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { z } from 'zod';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthLayout from '@/components/AuthLayout';
+import { AuthLayout } from '@/components/AuthLayout';
+import { Loader2, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { z } from 'zod';
 
 const registerSchema = z.object({
-  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  email: z.string().trim().email('Please enter a valid email address').max(255, 'Email is too long'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().email('Please enter a valid email address').max(255),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
 });
 
-const Register: React.FC = () => {
-  const navigate = useNavigate();
-  const { register } = useAuth();
+export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setFieldErrors({});
-
-    // Validate input
-    const result = registerSchema.safeParse({ name, email, password });
-    if (!result.success) {
-      const errors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          errors[err.path[0] as string] = err.message;
-        }
-      });
-      setFieldErrors(errors);
+    
+    const validation = registerSchema.safeParse({ name, email, password, confirmPassword });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
-
+    
     setIsLoading(true);
     try {
-      const response = await register({ name: name.trim(), email: email.trim(), password });
-      if (!response.accountVerified) {
-        navigate('/verify-email');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        'Registration failed. Please try again.';
-      if (message.toLowerCase().includes('already')) {
-        setError('An account with this email already exists.');
-      } else {
-        setError(message);
-      }
+      await register(name, email, password);
+      navigate('/verify-otp', { replace: true });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthLayout title="Create an account" subtitle="Start your journey with us today">
-      <form onSubmit={handleSubmit}>
+    <AuthLayout title="Create account" subtitle="Get started with your free account">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="name" className="auth-label">Full Name</label>
+          <div className="relative">
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="auth-input pl-12"
+              placeholder="John Doe"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="email" className="auth-label">Email</label>
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth-input pl-12"
+              placeholder="name@example.com"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+        
+        <div>
+          <label htmlFor="password" className="auth-label">Password</label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="auth-input pl-12 pr-12"
+              placeholder="Create a password"
+              disabled={isLoading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="auth-label">Confirm Password</label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              id="confirmPassword"
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="auth-input pl-12"
+              placeholder="Confirm your password"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+          >
+            <p className="text-sm text-destructive">{error}</p>
+          </motion.div>
         )}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <TextField
-            fullWidth
-            label="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-            placeholder="John Doe"
-            autoComplete="name"
-            autoFocus
-          />
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="btn-primary w-full flex items-center justify-center gap-2"
+        >
+          {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+          {isLoading ? 'Creating account...' : 'Create account'}
+        </button>
 
-          <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={!!fieldErrors.email}
-            helperText={fieldErrors.email}
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-
-          <TextField
-            fullWidth
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={!!fieldErrors.password}
-            helperText={fieldErrors.password || 'At least 8 characters with letters and numbers'}
-            placeholder="Create a strong password"
-            autoComplete="new-password"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    size="small"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            size="large"
-            disabled={isLoading}
-            sx={{ mt: 1, py: 1.5 }}
-          >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Create account'}
-          </Button>
-        </Box>
-      </form>
-
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ color: 'hsl(215 16% 47%)' }}>
+        <p className="text-center text-muted-foreground">
           Already have an account?{' '}
-          <Typography
-            component={Link}
-            to="/login"
-            className="link-primary"
-            sx={{ fontWeight: 600, textDecoration: 'none' }}
-          >
+          <Link to="/login" className="link-primary">
             Sign in
-          </Typography>
-        </Typography>
-      </Box>
+          </Link>
+        </p>
+      </form>
     </AuthLayout>
   );
-};
-
-export default Register;
+}

@@ -1,118 +1,102 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import Cookies from 'js-cookie';
+import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
 
-export const api = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = Cookies.get('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      Cookies.remove('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Auth types
-export interface LoginRequest {
+// Auth API
+export interface AuthRequest {
   email: string;
   password: string;
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
   email: string;
   token: string;
 }
 
-export interface RegisterRequest {
+export interface ProfileRequest {
   name: string;
   email: string;
   password: string;
 }
 
-export interface RegisterResponse {
+export interface ProfileResponse {
   userId: string;
   name: string;
   email: string;
-  accountVerified: boolean;
+  isAccountVerified: boolean;
 }
 
 export interface ResetPasswordRequest {
   email: string;
-  otp: string;
   newPassword: string;
-}
-
-export interface VerifyOtpRequest {
   otp: string;
 }
 
-// Auth API functions
 export const authApi = {
-  register: async (data: RegisterRequest): Promise<RegisterResponse> => {
-    const response = await api.post<RegisterResponse>('/register', data);
+  login: async (data: AuthRequest): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/login', data);
+    if (response.data.token) {
+      localStorage.setItem('auth_token', response.data.token);
+    }
     return response.data;
   },
 
-  login: async (data: LoginRequest): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/login', data);
-    if (response.data.token) {
-      Cookies.set('token', response.data.token, { expires: 1 }); // 1 day
-    }
+  register: async (data: ProfileRequest): Promise<ProfileResponse> => {
+    const response = await api.post<ProfileResponse>('/register', data);
     return response.data;
   },
 
   logout: async (): Promise<void> => {
+    await api.post('/logout');
+    localStorage.removeItem('auth_token');
+  },
+
+  isAuthenticated: async (): Promise<boolean> => {
     try {
-      await api.post('/logout');
-    } finally {
-      Cookies.remove('token');
+      const response = await api.get<boolean>('/is-authenticated');
+      return response.data;
+    } catch {
+      return false;
     }
   },
 
-  sendOtp: async (): Promise<void> => {
-    await api.post('/send-otp');
-  },
-
-  verifyOtp: async (data: VerifyOtpRequest): Promise<void> => {
-    await api.post('/verify-otp', data);
+  getProfile: async (): Promise<ProfileResponse> => {
+    const response = await api.get<ProfileResponse>('/profile');
+    return response.data;
   },
 
   sendResetOtp: async (email: string): Promise<void> => {
-    await api.post(`/send-reset-otp?email=${encodeURIComponent(email)}`);
+    await api.post('/send-reset-otp', null, { params: { email } });
   },
 
   resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
     await api.post('/reset-password', data);
   },
+
+  sendVerifyOtp: async (): Promise<void> => {
+    await api.post('/send-otp');
+  },
+
+  verifyOtp: async (otp: string): Promise<void> => {
+    await api.post('/verify-otp', { otp });
+  },
 };
 
-export const getToken = (): string | undefined => {
-  return Cookies.get('token');
-};
-
-export const isAuthenticated = (): boolean => {
-  return !!getToken();
-};
+export default api;
