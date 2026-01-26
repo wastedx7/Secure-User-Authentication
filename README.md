@@ -206,3 +206,9 @@ http://localhost:5173
 - Ensure the frontend API base URL points to `http://localhost:8080`
 - CORS must be enabled in Spring Boot
 - JWT tokens are required to access protected endpoints
+
+---
+
+### ! Contribution
+
+- there's one issue to be fixed -> the frontend displays user unauthenticated even though user is indeed authenticated, if you can help me out with that i'll be really thankfull !!!
