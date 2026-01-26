@@ -96,7 +96,7 @@ public class ProfileServiceImp implements ProfileService {
             return;
         }
         //generate otp for verification
-        String otp = String.valueOf(ThreadLocalRandom.current().nextInt(1000, 10000));
+        String otp = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
         //set expiration for otp
         // 24 hours
         long expiryTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000);

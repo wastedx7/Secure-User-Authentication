@@ -37,8 +37,8 @@ public class SecurityConfig {
         http.cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/register", "/send-reset-otp", "/reset-password", "/logout")
-                .permitAll().anyRequest().authenticated())
+                // .requestMatchers("/login", "/register", "/send-reset-otp", "/reset-password", "/logout")
+                .anyRequest().permitAll())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .logout(logout -> logout.disable())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
